@@ -1,0 +1,102 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  medic-api:
+    container_name: medic-api
+    image: medic-api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: ${COUCHDB_SERVICE_NAME}
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HORTI_BOOTSTRAP_VERSION: 3.10.0
+      NODE_ENV: production
+      HAPROXY_SVC: haproxy
+    volumes:
+      - /srv:/srv
+    networks:
+      - medic-net
+    depends_on:
+      - haproxy
+
+  medic-sentinel:
+    container_name: medic-sentinel
+    image: medic-sentinel
+    build:
+      context: .
+      dockerfile: sentinel/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: medic-api
+      NODE_ENV: production
+    networks:
+      - medic-net
+    depends_on: 
+      - medic-api
+    restart: unless-stopped
+
+  horticulturalist:
+    container_name: horticulturalist
+    image: medicmobile/horticulturalist:dockerize-123120-3
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: medic-api
+    networks:
+      - medic-net
+    depends_on:
+      - medic-api
+    restart: unless-stopped
+
+  haproxy:
+    container_name: haproxy
+    image: medicmobile/haproxy:rc-1.17
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWoRD: ${COUCHDB_PASSWORD}
+      COUCHDB_HOST: ${COUCHDB_HOST}
+    networks:
+      - medic-net
+    restart: unless-stopped
+
+  nginx:
+    container_name: medic-nginx
+    image: medicmobile/nginx:3.10.0-slim-01052021-11
+    environment:
+      CHT_DOMAIN: 
+    volumes:
+            # - medic-ssl:/root/.acme.sh/
+      - /srv/settings/medic-core/nginx/private/default.key:/etc/nginx/private/key.pem
+      - /srv/settings/medic-core/nginx/private/default.crt:/etc/nginx/private/cert.pem
+    networks:
+      - medic-net
+    depends_on:
+      - medic-api
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  medic-net:
+    name: medic-net

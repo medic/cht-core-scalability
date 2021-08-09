@@ -1,0 +1,27 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  haproxy:
+    container_name: haproxy
+    image: medicmobile/haproxy:rc-1.17
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWoRD: ${COUCHDB_PASSWORD}
+      COUCHDB_HOST: ${COUCHDB_HOST}
+    network_mode: host
+    restart: unless-stopped
+    expose: 
+      - 5984
+    ports: 
+      - 5984

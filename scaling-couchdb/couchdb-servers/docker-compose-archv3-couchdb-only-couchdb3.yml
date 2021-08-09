@@ -1,0 +1,28 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  couchdb:
+    container_name: medic-couchdb
+    image: medicmobile/couchdb:3.1.1-test1
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - NODENAME="couchdb@127.0.0.1" #For now with couchdb 3.x other node names have proven not to work. That's why this is hardcoded.
+    # https://hub.docker.com/_/couchdb
+    volumes:
+      - /srv/storage/medic-core/couchdb/data/:/opt/couchdb/data/
+      - /srv/settings/medic-core/couchdb/local.d:/opt/couchdb/etc/local.d/
+      - /srv/settings/medic-core/couchdb/local.ini:/opt/couchdb/etc/local.ini
+      - /srv/storage/medic-core/passwd/:/opt/couchdb/etc/local.d/passwd/
+    network_mode: host

@@ -1,0 +1,49 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  medic-sentinel:
+    container_name: medic-sentinel
+    image: medic-sentinel
+    build:
+      context: .
+      dockerfile: sentinel/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: ${API_SVC_NAME}
+      NODE_ENV: production
+    networks:
+      - medic-net
+    restart: unless-stopped
+
+  horticulturalist:
+    container_name: horticulturalist
+    image: medicmobile/horticulturalist:dockerize-123120-3
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: ${API_SVC_NAME}
+    networks:
+      - medic-net
+    restart: unless-stopped
+
+networks:
+  medic-net:
+    name: medic-net

@@ -1,0 +1,117 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  couchdb:
+    container_name: medic-couchdb
+    image: medicmobile/couchdb:2.3.1-test14
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+    # https://hub.docker.com/_/couchdb
+    volumes:
+      - /srv/storage/medic-core/couchdb/data/:/opt/couchdb/data/
+      - /srv/settings/medic-core/couchdb/local.d:/opt/couchdb/etc/local.d/
+      - /srv/settings/medic-core/couchdb/local.ini:/opt/couchdb/etc/local.ini
+      - /srv/storage/medic-core/passwd/:/opt/couchdb/etc/local.d/passwd/
+    networks:
+      - medic-net
+
+  medic-api:
+    container_name: medic-api
+    image: medic-api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: "couchdb@127.0.0.1"
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HORTI_BOOTSTRAP_VERSION: 3.10.0
+      NODE_ENV: production
+      HAPROXY_SVC: haproxy
+    networks:
+      - medic-net
+    depends_on:
+      - haproxy
+
+  medic-sentinel:
+    container_name: medic-sentinel
+    image: medic-sentinel
+    build:
+      context: .
+      dockerfile: sentinel/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: "couchdb@127.0.0.1"
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: medic-api
+      NODE_ENV: production
+    networks:
+      - medic-net
+    depends_on:
+      - medic-api
+    restart: unless-stopped
+
+  horticulturalist:
+    container_name: horticulturalist
+    image: medicmobile/horticulturalist:dockerize-123120-3
+    environment:
+      COUCHDB_SERVICE_NAME: couchdb
+      COUCH_NODE_NAME: "couchdb@127.0.0.1"
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HAPROXY_SVC: haproxy
+      API_SVC_NAME: medic-api
+    networks:
+      - medic-net
+    depends_on:
+      - medic-api
+    restart: unless-stopped
+
+  haproxy:
+    container_name: haproxy
+    image: medicmobile/haproxy:rc-1.17
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWoRD: ${COUCHDB_PASSWORD}
+      COUCHDB_HOST: couchdb
+    networks:
+      - medic-net
+    depends_on:
+      - couchdb
+    restart: unless-stopped
+
+  nginx:
+    container_name: medic-nginx
+    image: medicmobile/nginx:3.10.0-slim-01052021-11
+    environment:
+      CHT_DOMAIN: 
+    volumes:
+            # - medic-ssl:/root/.acme.sh/
+      - /srv/settings/medic-core/nginx/private/default.key:/etc/nginx/private/key.pem
+      - /srv/settings/medic-core/nginx/private/default.crt:/etc/nginx/private/cert.pem
+    networks:
+      - medic-net
+    depends_on:
+      - medic-api
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  medic-net:
+    name: medic-net

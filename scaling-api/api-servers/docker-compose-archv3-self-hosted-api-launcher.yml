@@ -1,0 +1,36 @@
+version: '3.7'
+
+## Usage
+## export COUCHDB_USER=admin && export COUCHDB_PASSWORD=admin123
+## docker-compose up -f docker-compose-archv3.yml
+## cntrl+c to exit
+## docker-compose down
+## docker volume rm medic-data medic-couchconfig
+
+## docker-compose up
+## https://localhost
+
+services:
+
+  medic-api:
+    container_name: medic-api
+    image: medic-api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      COUCHDB_SERVICE_NAME: ${COUCHDB_SERVICE_NAME}
+      COUCH_NODE_NAME: ${COUCHDB_NODE_NAME}
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      HORTI_BOOTSTRAP_VERSION: 3.10.0
+      NODE_ENV: production
+      HAPROXY_SVC: ${HAPROXY_SVC}
+    volumes:
+      - /srv:/srv
+      - /tmp:/tmp
+    network_mode: host
+    expose: 
+      - 5988
+    ports:
+      - 5988
