@@ -2,7 +2,7 @@
 
 ## Steps
 
-1. Setup Couchdb cluster. Follow the setps outlined under the `couchdb-servers` dir.
+1. Setup Couchdb cluster. Follow the setup outlined under the `couchdb-servers` dir.
 2. Setup FQDN for the load balancer configured using route53.
 3. Setup the main server. Follow the steps outlined under the `main-server` dir.
 4. Setup FQDN for the main server using route53.
